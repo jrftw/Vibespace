@@ -1,9 +1,9 @@
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
 
 struct ImagePicker: UIViewControllerRepresentable {
     @Binding var image: UIImage?
-    @Environment(\.presentationMode) private var presentationMode
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
@@ -29,7 +29,8 @@ struct ImagePicker: UIViewControllerRepresentable {
             if let uiImage = info[.originalImage] as? UIImage {
                 parent.image = uiImage
             }
-            parent.presentationMode.wrappedValue.dismiss()
+            picker.dismiss(animated: true)
         }
     }
 }
+#endif

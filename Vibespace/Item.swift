@@ -1,18 +1,26 @@
-//
-//  Item.swift
-//  Vibespace
-//
-//  Created by Kevin Doyle Jr. on 11/4/24.
-//
-
 import Foundation
-import SwiftData
+import CoreData
 
-@Model
-final class Item {
-    var timestamp: Date
-    
-    init(timestamp: Date) {
-        self.timestamp = timestamp
+@objc(VibespaceItem)
+public class VibespaceItem: NSManagedObject, Identifiable {
+    @NSManaged public var id: UUID
+    @NSManaged public var timestamp: Date
+
+    override init(entity: NSEntityDescription, insertInto context: NSManagedObjectContext?) {
+        super.init(entity: entity, insertInto: context)
+        self.id = UUID()
+        self.timestamp = Date()
+    }
+}
+
+extension VibespaceItem {
+    static func create(in context: NSManagedObjectContext) {
+        let newItem = VibespaceItem(context: context)
+        newItem.timestamp = Date()
+        do {
+            try context.save()
+        } catch {
+            fatalError("Error saving item: \(error.localizedDescription)")
+        }
     }
 }

@@ -1,28 +1,37 @@
-//
-//  NewPostView.swift
-//  Vibespace
-//
-//  Created by Kevin Doyle Jr. on 11/4/24.
-//
-
-
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+import PhotosUI
+#endif
 
 struct NewPostView: View {
     @Binding var posts: [Post]
     @State private var text = ""
-    @State private var selectedImage: UIImage?
+    @State private var selectedImageData: Data?
     @State private var showImagePicker = false
+    @Environment(\.presentationMode) private var presentationMode
 
     var body: some View {
         NavigationView {
             VStack {
-                TextEditor(text: $text)
-                    .padding()
-                    .frame(height: 150)
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(10)
-                
+                ZStack(alignment: .topLeading) {
+                    if text.isEmpty {
+                        Text("Write your post here...")
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 10)
+                    }
+                    TextEditor(text: $text)
+                        .padding()
+                        #if canImport(UIKit)
+                        .background(Color(UIColor.secondarySystemBackground))
+                        #elseif canImport(AppKit)
+                        .background(Color(NSColor.windowBackgroundColor)) // Fallback for macOS
+                        #endif
+                        .cornerRadius(10)
+                }
+
+                #if canImport(UIKit)
                 Button(action: {
                     showImagePicker = true
                 }) {
@@ -36,17 +45,31 @@ struct NewPostView: View {
                     .foregroundColor(.white)
                     .cornerRadius(10)
                 }
-                .padding(.top)
                 .sheet(isPresented: $showImagePicker) {
-                    ImagePicker(image: $selectedImage)
+                    VibespaceImagePicker(image: Binding(get: {
+                        if let imageData = selectedImageData {
+                            return UIImage(data: imageData)
+                        }
+                        return nil
+                    }, set: {
+                        selectedImageData = $0?.jpegData(compressionQuality: 1.0)
+                    }))
                 }
+                #endif
 
                 Spacer()
 
                 Button("Post") {
+                    #if canImport(UIKit)
+                    var selectedImage: UIImage? = nil
+                    if let imageData = selectedImageData {
+                        selectedImage = UIImage(data: imageData)
+                    }
+                    #endif
+
                     let newPost = Post(username: "current_user", timestamp: Date(), text: text, image: selectedImage, videoURL: nil, likes: 0, comments: 0)
                     posts.insert(newPost, at: 0)
-                    // Dismiss the view
+                    presentationMode.wrappedValue.dismiss()
                 }
                 .padding()
                 .frame(maxWidth: .infinity)
@@ -56,15 +79,19 @@ struct NewPostView: View {
             }
             .padding()
             .navigationTitle("New Post")
+            #if os(iOS)
             .navigationBarItems(leading: Button("Cancel") {
-                // Dismiss the view
+                presentationMode.wrappedValue.dismiss()
             })
+            #elseif os(macOS)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                }
+            }
+            #endif
         }
-    }
-}
-
-struct NewPostView_Previews: PreviewProvider {
-    static var previews: some View {
-        NewPostView(posts: .constant(Post.sampleData))
     }
 }
